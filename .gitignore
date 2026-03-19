@@ -4,6 +4,8 @@
 # generated output — don't commit client data
 cases/
 images/
+dashboards/
+trash/
 
 # python
 __pycache__/
