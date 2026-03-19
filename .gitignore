@@ -1,0 +1,22 @@
+# environment
+.env
+
+# generated output — don't commit client data
+cases/
+images/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# conda / venv
+env/
+venv/
+*.egg-info/
+
+# editors
+.vscode/
+.idea/
+*.swp
