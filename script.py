@@ -16,7 +16,7 @@ OUTPUT_FOLDER = "cases"
 MD_FOLDER     = "cases/md"
 IMAGE_FOLDER  = "images"
 
-POPPLER_PATH = r"C:\path\to\poppler\bin"  # update to your poppler path
+POPPLER_PATH = r"C:\Users\antonioneto\Release-25.12.0-0\poppler-25.12.0\Library\bin"  # update to your poppler path
 
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(MD_FOLDER,     exist_ok=True)

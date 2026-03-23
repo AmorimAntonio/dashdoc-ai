@@ -361,9 +361,9 @@ def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
     # strip first H1 — it becomes the header title
     md_body = re.sub(r"^# .+\n?", "", md_text, count=1)
 
-    # load logo from images/logo.png relative to project root
+    # md is at cases/md/file.md → parent = cases/md → parent.parent = cases → parent.parent.parent = project root
     logo_b64  = ""
-    logo_path = (md_path.parent.parent / "images" / "logo.png").resolve()
+    logo_path = (md_path.parent.parent.parent / "images" / "logo.png").resolve()
     if logo_path.exists():
         logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
 
@@ -374,6 +374,7 @@ def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
     HTML(string=full_html, base_url=str(md_path.parent)).write_pdf(
         str(output_path), stylesheets=[CSS(string=CSS_STYLES)]
     )
+    print(f"DEBUG logo_path: {logo_path}")
 
     print(f"✅ PDF saved: {output_path}")
     return output_path
