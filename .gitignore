@@ -2,10 +2,14 @@
 .env
 
 # generated output — don't commit client data
-cases/
-images/
-dashboards/
+cases/*
+images/*
+dashboards/*
 trash/
+!cases/.gitkeep
+!images/.gitkeep
+!cases/md/.gitkeep
+!dashboards/.gitkeep
 
 # python
 __pycache__/
