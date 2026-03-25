@@ -403,10 +403,7 @@ hr {
 
 
 def build_html(dashboard_name: str, body_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
-    """Builds the final HTML structure with Cover, Footer elements and Mockup."""
-    from datetime import date
-    date_str = date.today().strftime("%d/%m/%Y")
-
+    """Monta a estrutura HTML final corrigindo a duplicação e preparando o índice."""
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -431,17 +428,21 @@ def build_html(dashboard_name: str, body_html: str, logo_b64: str, mockup_b64: s
         <div class="header-title">{dashboard_name}</div>
         <div class="header-line"></div>
     </div>
-
     <div class="cover-body">
         <div class="cover-title">{dashboard_name}</div>
         <div class="cover-summary">{summary}</div>
     </div>
 </section>
 
-<div class="page-wrapper" style="counter-reset: page 1;">
+<section class="toc-page">
+    <h1 class="toc-title">ÍNDICE</h1>
+    <div class="toc-container">
+        [TOC]
+    </div>
+</section>
+
+<div class="page-wrapper">
     {body_html}
-</div>
-{body_html}
 </div>
 
 </body>
