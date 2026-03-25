@@ -21,12 +21,15 @@ from weasyprint import HTML, CSS
 
 
 def encode_image(path):
+    """Encodes an image to base64 string."""
+    if not path.exists():
+        return ""
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
 def embed_images(html: str, md_path: Path) -> str:
-    # replaces local image src with base64 so the PDF is self-contained
+    """Replaces local image src with base64 so the PDF is self-contained."""
     def replacer(match):
         src = match.group(1)
         if src.startswith(("http://", "https://", "data:")):
@@ -43,41 +46,125 @@ def embed_images(html: str, md_path: Path) -> str:
 
 
 def md_to_html(md_text: str) -> str:
+    """Converts markdown text to HTML with specific extensions."""
     return markdown.markdown(md_text, extensions=["extra", "toc", "sane_lists", "nl2br"])
+
+
+def extract_summary(md_text: str) -> str:
+    """
+    Remove o primeiro título H1 e extrai o primeiro parágrafo de texto puro 
+    para ser utilizado como resumo na capa do documento.
+    """
+    # Remove o primeiro título H1
+    md_clean = re.sub(r"^# .+\n?", "", md_text, count=1).strip()
+    # Pega parágrafos que não sejam imagens
+    paragraphs = [p.strip() for p in md_clean.split("\n\n") if p.strip() and not p.startswith('![')]
+    
+    if paragraphs:
+        # Limpa links e negritos para o texto da capa
+        summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', paragraphs[0])
+        summary = summary.replace('**', '').replace('__', '')
+        return summary
+    return ""
 
 
 CSS_STYLES = """
 @page {
     size: A4;
-    margin: 16mm 16mm 20mm 16mm;
+    margin: 25mm 16mm 25mm 16mm;
 
-    @bottom-right {
-        content: element(page-footer);
-        padding-right: 2mm;
-    }
+    @bottom-left { content: element(footer-left); }
+    @bottom-center { content: element(footer-center); }
+    @bottom-right { content: element(footer-right); }
+    
 }
 
 @page :first {
     margin-top: 0;
+    @bottom-left { content: none; }
+    @bottom-center { content: none; }
+    @bottom-right { content: none; }
+    counter-reset: page 0;
+    #header-mockup { display: none; }
 }
 
-#page-footer {
-    position: running(page-footer);
+#footer-left {
+    position: running(footer-left);
+    font-size: 8.5pt;
+    color: #2d4a6b;
+    padding-bottom: 10mm;
+}
+
+#footer-center {
+    position: running(footer-center);
+    font-size: 9pt;
+    font-weight: 600;
+    color: #2d4a6b;
+    padding-bottom: 10mm;
+}
+
+#footer-right {
+    position: running(footer-right);
     text-align: right;
+    padding-bottom: 10mm;
 }
 
-#page-footer img {
-    height: 18px;
+#footer-right img {
+    height: 20px;
     width: auto;
+}
+
+#header-mockup {
+    position: fixed; 
+    top: -28mm;   
+    right: -20mm; 
+    width: 40mm;  
+    height: 25mm; 
+    z-index: 1000;
+    overflow: hidden;
+}
+
+#header-mockup img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    object-position: center;
     border: none;
     margin: 0;
-    display: inline-block;
 }
 
-#page-footer span {
-    color: #2d4a6b;
-    font-weight: 600;
-    font-size: 9pt;
+/* --- ESTILOS DA CAPA --- */
+.cover-page {
+    page-break-after: always;
+    height: 100%;
+    counter-reset: page 0;
+}
+
+.content-section {
+    counter-reset: page 1;
+}
+
+.cover-body {
+    text-align: right;
+    margin-top: 60mm;
+    padding-right: 5mm;
+}
+
+.cover-title {
+    font-size: 28pt;
+    font-weight: 700;
+    color: #1a2d42;
+    line-height: 1.1;
+    margin-bottom: 10mm;
+    text-transform: uppercase;
+}
+
+.cover-summary {
+    font-size: 11pt;
+    color: #4a5568;
+    max-width: 110mm;
+    margin-left: auto;
+    line-height: 1.6;
 }
 
 html, body {
@@ -94,7 +181,7 @@ html, body {
     background: linear-gradient(135deg, #1a2d42 0%, #2d4a6b 60%, #3b6ea5 100%);
     color: #ffffff;
     padding: 18mm 18mm 16mm 18mm;
-    margin: -16mm -16mm 0 -16mm;
+    margin: 0 -16mm 0 -16mm;
     page-break-after: avoid;
     position: relative;
     overflow: hidden;
@@ -110,6 +197,7 @@ html, body {
     border-radius: 50%;
     background: rgba(78, 205, 196, 0.10);
 }
+
 
 .doc-header::after {
     content: '';
@@ -159,6 +247,8 @@ html, body {
 
 .page-wrapper {
     padding: 10mm 0 0 0;
+    counter-increment: page 0;
+    counter-reset: page 1;
 }
 
 h1 {
@@ -312,15 +402,10 @@ hr {
 """
 
 
-def build_html(dashboard_name: str, body_html: str, logo_b64: str = "") -> str:
+def build_html(dashboard_name: str, body_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
+    """Builds the final HTML structure with Cover, Footer elements and Mockup."""
     from datetime import date
     date_str = date.today().strftime("%d/%m/%Y")
-
-    footer = (
-        f'<img src="data:image/png;base64,{logo_b64}" alt="logo" />'
-        if logo_b64 else
-        '<span>employerDados</span>'
-    )
 
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -330,16 +415,32 @@ def build_html(dashboard_name: str, body_html: str, logo_b64: str = "") -> str:
 </head>
 <body>
 
-<div id="page-footer">{footer}</div>
-
-<div class="doc-header">
-    <div class="header-badge">Documentação · Power BI</div>
-    <div class="header-title">{dashboard_name}</div>
-    <div class="header-line"></div>
-    <div class="header-subtitle">{date_str}</div>
+<div id="footer-left">{dashboard_name}</div>
+<div id="footer-center">Página <span style="content: counter(page)"></span></div>
+<div id="footer-right">
+    <img src="data:image/png;base64,{logo_b64}" alt="logo">
 </div>
 
-<div class="page-wrapper">
+<div id="header-mockup">
+    <img src="data:image/png;base64,{mockup_b64}">
+</div>
+
+<section class="cover-page">
+    <div class="doc-header">
+        <div class="header-badge">Documentação · Power BI</div>
+        <div class="header-title">{dashboard_name}</div>
+        <div class="header-line"></div>
+    </div>
+
+    <div class="cover-body">
+        <div class="cover-title">{dashboard_name}</div>
+        <div class="cover-summary">{summary}</div>
+    </div>
+</section>
+
+<div class="page-wrapper" style="counter-reset: page 1;">
+    {body_html}
+</div>
 {body_html}
 </div>
 
@@ -348,39 +449,84 @@ def build_html(dashboard_name: str, body_html: str, logo_b64: str = "") -> str:
 
 
 def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
+    """
+    Renderiza o Markdown para PDF, garantindo que o título e o primeiro parágrafo
+    sejam usados apenas na capa e removidos do corpo do documento.
+    """
     md_path = Path(md_path)
     if not md_path.exists():
-        raise FileNotFoundError(f"File not found: {md_path}")
+        print(f"Erro: Arquivo {md_path} não encontrado.")
+        sys.exit(1)
 
+    # Define o caminho de saída
     output_path = Path(output_path) if output_path else md_path.with_suffix(".pdf")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    md_text        = md_path.read_text(encoding="utf-8")
-    dashboard_name = md_path.stem.replace("_", " ")
+    print(f"  → Processando: {md_path.name}")
+    
+    # 1. Lê o conteúdo original
+    md_text = md_path.read_text(encoding="utf-8")
+    dashboard_name = md_path.stem.replace("_", " ").title()
 
-    # strip first H1 — it becomes the header title
-    md_body = re.sub(r"^# .+\n?", "", md_text, count=1)
+    # 2. Extrai o resumo para a capa (antes de deletar as linhas)
+    summary_text = extract_summary(md_text)
 
-    # md is at cases/md/file.md → parent = cases/md → parent.parent = cases → parent.parent.parent = project root
-    logo_b64  = ""
-    logo_path = (md_path.parent.parent.parent / "images" / "logo.png").resolve()
-    if logo_path.exists():
-        logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
+    # 3. LÓGICA DE CORTE DO CORPO (Para não repetir na 2ª página)
+    lines = md_text.splitlines()
 
-    body_html = md_to_html(md_body)
-    full_html = build_html(dashboard_name, body_html, logo_b64)
+    # Remove o Título (primeira linha que começa com #)
+    if lines and lines[0].strip().startswith('#'):
+        lines.pop(0)
+
+    # Limpa linhas vazias entre o título e o resumo
+    while lines and not lines[0].strip():
+        lines.pop(0)
+
+    # REMOVE O PRIMEIRO PARÁGRAFO (Resumo)
+    # Continua removendo linhas até encontrar a primeira quebra de parágrafo (linha vazia)
+    while lines and lines[0].strip():
+        lines.pop(0)
+
+    # O que sobrar nas 'lines' é o conteúdo que vai para a segunda página em diante
+    md_body = "\n".join(lines).strip()
+
+    # 4. Processamento de Imagens e Assets
+    root_path = md_path.parent.parent.parent
+    logo_path = (root_path / "images" / "logo.png").resolve()
+    mockup_path = (root_path / "images" / "mockup.png").resolve()
+
+    logo_b64 = encode_image(logo_path)
+    mockup_b64 = encode_image(mockup_path)
+
+    # 5. Montagem do HTML
+    content_html = md_to_html(md_body)
+    full_html = build_html(
+        dashboard_name, 
+        content_html, 
+        logo_b64, 
+        mockup_b64, 
+        summary_text
+    )
+    
+    # Embutir imagens que estão dentro do corpo do Markdown
     full_html = embed_images(full_html, md_path)
 
-    HTML(string=full_html, base_url=str(md_path.parent)).write_pdf(
-        str(output_path), stylesheets=[CSS(string=CSS_STYLES)]
-    )
-    print(f"DEBUG logo_path: {logo_path}")
+    # 6. Geração do PDF Final
+    try:
+        HTML(string=full_html, base_url=str(md_path.parent)).write_pdf(
+            str(output_path), 
+            stylesheets=[CSS(string=CSS_STYLES)]
+        )
+        print(f"  ✔ PDF gerado com sucesso: {output_path}")
+    except Exception as e:
+        print(f"  ✘ Erro na geração: {e}")
+        raise
 
-    print(f"✅ PDF saved: {output_path}")
     return output_path
 
 
 def main():
+    """CLI Entry point."""
     parser = argparse.ArgumentParser(description="Convert a markdown file to a styled PDF.")
     parser.add_argument("md_file", help="Path to the .md file")
     parser.add_argument("--output", "-o", default=None, help="Output PDF path")
@@ -392,7 +538,7 @@ def main():
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"Failed: {e}", file=sys.stderr)
+        print(f"Failed to process PDF: {e}", file=sys.stderr)
         raise
 
 

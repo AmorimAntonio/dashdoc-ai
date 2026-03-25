@@ -8,7 +8,6 @@ dashboards/*
 trash/
 !cases/.gitkeep
 !images/.gitkeep
-!cases/md/.gitkeep
 !dashboards/.gitkeep
 
 # python
