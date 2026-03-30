@@ -46,9 +46,13 @@ def embed_images(html: str, md_path: Path) -> str:
 
 
 def md_to_html(md_text: str) -> str:
-    """Converts markdown text to HTML with specific extensions."""
-    return markdown.markdown(md_text, extensions=["extra", "toc", "sane_lists", "nl2br"])
-
+    """Converts markdown and returns (body_html, toc_html)."""
+    md = markdown.Markdown(extensions=["extra", "toc", "sane_lists", "nl2br"])
+    
+    body_html = md.convert(md_text)
+    toc_html = md.toc 
+    
+    return body_html, toc_html
 
 def extract_summary(md_text: str) -> str:
     """
@@ -137,11 +141,6 @@ CSS_STYLES = """
 .cover-page {
     page-break-after: always;
     height: 100%;
-    counter-reset: page 0;
-}
-
-.content-section {
-    counter-reset: page 1;
 }
 
 .cover-body {
@@ -247,8 +246,6 @@ html, body {
 
 .page-wrapper {
     padding: 10mm 0 0 0;
-    counter-increment: page 0;
-    counter-reset: page 1;
 }
 
 h1 {
@@ -342,6 +339,74 @@ pre code {
     padding: 0;
 }
 
+.toc-page { 
+    page-break-after: always; 
+}
+
+.toc-title { 
+    font-size: 20pt; 
+    font-weight: bold; 
+    color: #1a2d42; 
+    margin-bottom: 15mm; 
+    border-bottom: 2px solid #1a2d42; 
+    padding-bottom: 10px; 
+    text-transform: uppercase;
+}
+
+/* Remove as bolinhas da lista e ajusta o recuo */
+.toc-container div.toc ul { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0;
+}
+
+.toc-container div.toc li {
+    margin-bottom: 8px;
+}
+
+/* Faz a mágica do alinhamento e dos pontos */
+.toc-container div.toc a { 
+    text-decoration: none; 
+    color: #1e2d3d; 
+    display: flex; 
+    align-items: baseline; 
+    font-size: 11pt;
+    font-family: 'Segoe UI', Arial, sans-serif; /* Garante a fonte correta */
+}
+
+/* O texto do título do capítulo */
+.toc-container div.toc a::before {
+    content: "";
+    flex-grow: 1;
+    order: 2;
+    border-bottom: 1px dotted #aaa; /* Os pontinhos */
+    margin: 0 10px;
+    position: relative;
+    top: -4px;
+}
+
+/* O número da página alinhado à direita */
+.toc-container div.toc a::after { 
+    content: target-counter(attr(href), page); 
+    order: 3;
+    font-weight: bold;
+    color: #2d4a6b;
+    min-width: 20px;
+    text-align: right;
+}
+
+/* Ajuste para sub-itens (caso existam h2, h3) */
+.toc-container div.toc ul ul {
+    padding-left: 20px;
+    margin-top: 5px;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    color: #333;
+    line-height: 1.6;
+}
+
 blockquote {
     background: rgba(78, 205, 196, 0.07);
     border-left: 3px solid #4ecdc4;
@@ -402,7 +467,7 @@ hr {
 """
 
 
-def build_html(dashboard_name: str, body_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
+def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
     """Monta a estrutura HTML final corrigindo a duplicação e preparando o índice."""
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -437,8 +502,7 @@ def build_html(dashboard_name: str, body_html: str, logo_b64: str, mockup_b64: s
 <section class="toc-page">
     <h1 class="toc-title">ÍNDICE</h1>
     <div class="toc-container">
-        [TOC]
-    </div>
+        {toc_html}  </div>
 </section>
 
 <div class="page-wrapper">
@@ -499,11 +563,11 @@ def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
     logo_b64 = encode_image(logo_path)
     mockup_b64 = encode_image(mockup_path)
 
-    # 5. Montagem do HTML
-    content_html = md_to_html(md_body)
+    content_html, toc_html = md_to_html(md_body) # Pega os dois
     full_html = build_html(
         dashboard_name, 
         content_html, 
+        toc_html, 
         logo_b64, 
         mockup_b64, 
         summary_text

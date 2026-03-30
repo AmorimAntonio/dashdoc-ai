@@ -130,7 +130,7 @@ Exemplos: "Vagas e Demais por vagas", "Média de Dias por período", "Resumo por
 
 [2-3 frases descrevendo o que o visual mostra]
 
-### Como interpretar:
+### Funcionamento:
 - [ponto 1]
 - [ponto 2]
 - [ponto 3 — opcional]
