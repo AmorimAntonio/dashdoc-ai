@@ -56,22 +56,20 @@ def md_to_html(md_text: str) -> str:
 
 def extract_summary(md_text: str) -> str:
     """
-    Remove o primeiro título H1 e extrai o primeiro parágrafo de texto puro 
-    para ser utilizado como resumo na capa do documento.
+    Removes first h1 title and exctract the first text paragraph to 
+    use it in the front page.
     """
-    # Remove o primeiro título H1
     md_clean = re.sub(r"^# .+\n?", "", md_text, count=1).strip()
-    # Pega parágrafos que não sejam imagens
     paragraphs = [p.strip() for p in md_clean.split("\n\n") if p.strip() and not p.startswith('![')]
     
     if paragraphs:
-        # Limpa links e negritos para o texto da capa
         summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', paragraphs[0])
         summary = summary.replace('**', '').replace('__', '')
         return summary
     return ""
 
 
+#CSS configs, responssible for the pdf's appearance
 CSS_STYLES = """
 @page {
     size: A4;
@@ -137,7 +135,7 @@ CSS_STYLES = """
     margin: 0;
 }
 
-/* --- ESTILOS DA CAPA --- */
+/* --- COVER STYLES --- */
 .cover-page {
     page-break-after: always;
     height: 100%;
@@ -353,7 +351,7 @@ pre code {
     text-transform: uppercase;
 }
 
-/* Remove as bolinhas da lista e ajusta o recuo */
+
 .toc-container div.toc ul { 
     list-style: none; 
     padding: 0; 
@@ -364,28 +362,28 @@ pre code {
     margin-bottom: 8px;
 }
 
-/* Faz a mágica do alinhamento e dos pontos */
+
 .toc-container div.toc a { 
     text-decoration: none; 
     color: #1e2d3d; 
     display: flex; 
     align-items: baseline; 
     font-size: 11pt;
-    font-family: 'Segoe UI', Arial, sans-serif; /* Garante a fonte correta */
+    font-family: 'Segoe UI', Arial, sans-serif;
 }
 
-/* O texto do título do capítulo */
+
 .toc-container div.toc a::before {
     content: "";
     flex-grow: 1;
     order: 2;
-    border-bottom: 1px dotted #aaa; /* Os pontinhos */
+    border-bottom: 1px dotted #aaa; 
     margin: 0 10px;
     position: relative;
     top: -4px;
 }
 
-/* O número da página alinhado à direita */
+
 .toc-container div.toc a::after { 
     content: target-counter(attr(href), page); 
     order: 3;
@@ -395,7 +393,7 @@ pre code {
     text-align: right;
 }
 
-/* Ajuste para sub-itens (caso existam h2, h3) */
+
 .toc-container div.toc ul ul {
     padding-left: 20px;
     margin-top: 5px;
@@ -468,7 +466,7 @@ hr {
 
 
 def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
-    """Monta a estrutura HTML final corrigindo a duplicação e preparando o índice."""
+    """Builds the final HTML structure, preparing the index and fixing bugs."""
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -515,47 +513,41 @@ def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str
 
 def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
     """
-    Renderiza o Markdown para PDF, garantindo que o título e o primeiro parágrafo
-    sejam usados apenas na capa e removidos do corpo do documento.
+    Render the MD to PDF, assuring that the title and the first paragraph 
+    will be used only in the cover and removing them from de doc body
     """
     md_path = Path(md_path)
     if not md_path.exists():
         print(f"Erro: Arquivo {md_path} não encontrado.")
         sys.exit(1)
 
-    # Define o caminho de saída
     output_path = Path(output_path) if output_path else md_path.with_suffix(".pdf")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     print(f"  → Processando: {md_path.name}")
     
-    # 1. Lê o conteúdo original
     md_text = md_path.read_text(encoding="utf-8")
     dashboard_name = md_path.stem.replace("_", " ").title()
 
-    # 2. Extrai o resumo para a capa (antes de deletar as linhas)
     summary_text = extract_summary(md_text)
 
-    # 3. LÓGICA DE CORTE DO CORPO (Para não repetir na 2ª página)
     lines = md_text.splitlines()
 
-    # Remove o Título (primeira linha que começa com #)
+
     if lines and lines[0].strip().startswith('#'):
         lines.pop(0)
+        
 
-    # Limpa linhas vazias entre o título e o resumo
     while lines and not lines[0].strip():
         lines.pop(0)
 
-    # REMOVE O PRIMEIRO PARÁGRAFO (Resumo)
-    # Continua removendo linhas até encontrar a primeira quebra de parágrafo (linha vazia)
+
     while lines and lines[0].strip():
         lines.pop(0)
 
-    # O que sobrar nas 'lines' é o conteúdo que vai para a segunda página em diante
+
     md_body = "\n".join(lines).strip()
 
-    # 4. Processamento de Imagens e Assets
     root_path = md_path.parent.parent.parent
     logo_path = (root_path / "images" / "logo.png").resolve()
     mockup_path = (root_path / "images" / "mockup.png").resolve()
@@ -563,7 +555,7 @@ def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
     logo_b64 = encode_image(logo_path)
     mockup_b64 = encode_image(mockup_path)
 
-    content_html, toc_html = md_to_html(md_body) # Pega os dois
+    content_html, toc_html = md_to_html(md_body) 
     full_html = build_html(
         dashboard_name, 
         content_html, 
@@ -573,10 +565,10 @@ def render(md_path: str | Path, output_path: str | Path | None = None) -> Path:
         summary_text
     )
     
-    # Embutir imagens que estão dentro do corpo do Markdown
+
     full_html = embed_images(full_html, md_path)
 
-    # 6. Geração do PDF Final
+    # generating the final pdf
     try:
         HTML(string=full_html, base_url=str(md_path.parent)).write_pdf(
             str(output_path), 
