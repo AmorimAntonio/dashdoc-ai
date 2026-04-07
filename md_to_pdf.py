@@ -15,7 +15,7 @@ import base64
 import re
 import sys
 from pathlib import Path
-
+from datetime import datetime
 import markdown
 from weasyprint import HTML, CSS
 
@@ -462,11 +462,38 @@ hr {
     border-top: 1px solid #d0d9e8;
     margin: 20px 0;
 }
+
+.signature-section {
+    margin-top: 50mm; 
+    page-break-inside: avoid; 
+    text-align: center;
+    width: 100%;
+}
+
+.signature-line {
+    width: 80mm;
+    border-top: 1.5pt solid #1a2d42;
+    margin: 0 auto 5mm auto; 
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 600;
+    color: #1a2d42;
+    padding-top: 8px;
+}
+
+.version-info {
+    font-size: 9pt;
+    color: #718096;
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 10mm;
+}
 """
 
 
 def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str, mockup_b64: str, summary: str) -> str:
-    """Builds the final HTML structure, preparing the index and fixing bugs."""
+    data_atual = datetime.now().strftime("%d/%m/%Y")
+    
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -500,12 +527,26 @@ def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str
 <section class="toc-page">
     <h1 class="toc-title">ÍNDICE</h1>
     <div class="toc-container">
-        {toc_html}  </div>
+        {toc_html}  
+    </div>
 </section>
 
 <div class="page-wrapper">
     {body_html}
 </div>
+
+<section class="signature-section">
+    <div class="signature-line">
+        Assinatura do Solicitante
+        <p>&nbsp;</p>
+    </div>
+    <div class="signature-line">
+        Assinatura do Líder de Projeto
+    </div>
+    <div class="version-info">
+        Versão 1 - ({data_atual})
+    </div>
+</section>
 
 </body>
 </html>"""
