@@ -463,30 +463,43 @@ hr {
     margin: 20px 0;
 }
 
-.signature-section {
-    margin-top: 50mm; 
+.approval-section {
+    margin-top: 40mm;
     page-break-inside: avoid; 
-    text-align: center;
     width: 100%;
+    text-align: center; 
+    font-size: 0; 
 }
 
-.signature-line {
-    width: 80mm;
-    border-top: 1.5pt solid #1a2d42;
-    margin: 0 auto 5mm auto; 
-    text-align: center;
-    font-size: 11pt;
-    font-weight: 600;
+.info-box {
+    display: inline-block;
+    width: 30%; 
+    margin: 0 1.5%;
+    border: 1px solid #2d4a6b;
+    border-radius: 4px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    text-align: left;
+    vertical-align: top;
+    min-height: 50px; 
+    background-color: #f8fafc;
+}
+
+.box-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #d0d9e8;
+    padding-bottom: 4px;
+}
+
+.box-content {
+    font-size: 10pt;
     color: #1a2d42;
-    padding-top: 8px;
-}
-
-.version-info {
-    font-size: 9pt;
-    color: #718096;
-    font-style: italic;
     text-align: center;
-    margin-bottom: 10mm;
+    font-weight: 600;
 }
 """
 
@@ -535,10 +548,19 @@ def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str
     {body_html}
 </div>
 
-<section class="signature-section">
-    <div class="version-info">
-        Versão 1 - ({data_atual})
+<section class="approval-section">
+    <div class="info-box">
+        <div class="box-title">Versão</div>
+        <div class="box-content">1 - ({data_atual})</div>
     </div>
+    
+    <div class="info-box">
+        <div class="box-title">Desenvolvido por:</div>
+        <div class="box-content">Victor Marques</div> </div>
+    
+    <div class="info-box">
+        <div class="box-title">Aprovado por:</div>
+        <div class="box-content">&nbsp;</div> </div>
 </section>
 
 </body>
