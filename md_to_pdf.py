@@ -536,13 +536,6 @@ def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str
 </div>
 
 <section class="signature-section">
-    <div class="signature-line">
-        Assinatura do Solicitante
-        <p>&nbsp;</p>
-    </div>
-    <div class="signature-line">
-        Assinatura do Líder de Projeto
-    </div>
     <div class="version-info">
         Versão 1 - ({data_atual})
     </div>
