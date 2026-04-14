@@ -556,7 +556,7 @@ def build_html(dashboard_name: str, body_html: str, toc_html: str, logo_b64: str
     
     <div class="info-box">
         <div class="box-title">Desenvolvido por:</div>
-        <div class="box-content">Victor Marques</div> </div>
+        <div class="box-content">&nbsp</div> </div>
     
     <div class="info-box">
         <div class="box-title">Aprovado por:</div>
